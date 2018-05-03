@@ -29,6 +29,32 @@ namespace NET_Email_Sender
         }
 
         /// <summary>
+        /// Reply-To
+        /// </summary>
+        public string ReplyTo
+        {
+            get { return Headers.ReplyTo; }
+            set { Headers.ReplyTo = value; }
+        }
+        /// <summary>
+        /// CC
+        /// </summary>
+        public string CC
+        {
+            get { return Headers.CC; }
+            set { Headers.CC = value; }
+        }
+
+        /// <summary>
+        /// BCC
+        /// </summary>
+        public string BCC
+        {
+            get { return Headers.BCC; }
+            set { Headers.BCC = value; }
+        }
+
+        /// <summary>
         /// Subject
         /// </summary>
         public string Subject
@@ -87,7 +113,7 @@ namespace NET_Email_Sender
         private string _CC;
         public string CC
         {
-            get { return (_CC != null) ? $"CC: {_ReplyTo}" : null; }
+            get { return (_CC != null) ? $"CC: {_CC}" : null; }
             set { _CC = value; }
         }
 

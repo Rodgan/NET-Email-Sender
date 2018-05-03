@@ -42,15 +42,21 @@ namespace NET_Email_Sender
             SyntaxError = 555
         }
 
+        public static string FixMessage(string message)
+        {
+            var match = Regex.Match(message,  @"([\d]{3}[ |\-]){1}(.)+$");
+
+            if (match.Success)
+                return match.Value;
+            else
+                return null;
+        }
         public static bool GetResponseCode(string message, ResponseCode expectedResponse)
         {
             if (message == null || message.Length < 3)
                 return false;
 
-            var match = Regex.Match(message,  @"([\d]{3}[ |\-]){1}(.)+$");
-
-            if (match.Success)
-                message = match.Value;
+            message = FixMessage(message);
 
             var code = message.Substring(0,3);
 

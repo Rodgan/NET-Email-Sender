@@ -15,8 +15,8 @@ namespace NET_Email_Sender
     {
         public enum AuthType
         {
-            Plain,
             Login,
+            Plain,
             CramMD5
         }
 
@@ -102,6 +102,13 @@ namespace NET_Email_Sender
         {
             SetServerSettings(ipAddress, port);
         }
+        public SMTP(string ipAddress, string port)
+        {
+            int smtpPort = 0;
+
+            if (int.TryParse(port, out smtpPort))
+                SetServerSettings(ipAddress, smtpPort);
+        }
         public SMTP() { }
 
         /// <summary>
@@ -132,6 +139,8 @@ namespace NET_Email_Sender
 
             if (UseSSL)
             {
+                Log.Add($"<Connecting via SSL to {Hostname}:{Port}>");
+
                 SSLStream = new SslStream(Stream, true, new RemoteCertificateValidationCallback(ValidateSSLCertificate), null);
                 SSLStream.AuthenticateAsClient(Hostname);
 
@@ -140,6 +149,8 @@ namespace NET_Email_Sender
             }
             else
             {
+                Log.Add($"<Connecting to {Hostname}:{Port}>");
+
                 Reader = new StreamReader(Stream);
                 Writer = new StreamWriter(Stream) { AutoFlush = true };
             }
@@ -149,7 +160,7 @@ namespace NET_Email_Sender
             // Expecting 220
             if (!SMTPResponse.GetResponseCode(ReadLine(), SMTPResponse.ResponseCode.ServiceReady))
             {
-                Log.Add($"Cannot establish connection to {Hostname}:{Port}");
+                Log.Add($"<Cannot establish connection to {Hostname}:{Port}>");
                 return false;
             }
 
@@ -157,7 +168,7 @@ namespace NET_Email_Sender
             // Expecting 250
             if (!SendAndReadAll("EHLO " + Hostname, SMTPResponse.ResponseCode.OK))
             {
-                Log.Add($"Error after greetings {Hostname}:{Port}");
+                Log.Add($"<Error after greetings {Hostname}:{Port}>");
                 return false;
             }
 
@@ -170,7 +181,7 @@ namespace NET_Email_Sender
                     case AuthType.Login:
                         if (!AuthLogin())
                         {
-                            Log.Add($"Authentication Error {Hostname}:{Port}");
+                            Log.Add($"<Authentication Error {Hostname}:{Port}>");
                             return false;
                         }
                         break;
@@ -181,15 +192,16 @@ namespace NET_Email_Sender
             // Send RCPT TO
             if (!SendSenderAndRecipientAddresses(email))
             {
-                Log.Add($"Error after MAIL FROM & RCPT TO {Hostname}:{Port}");
+                Log.Add($"<Error after MAIL FROM & RCPT TO {Hostname}:{Port}>");
                 return false;
             }
+
 
             // Send DATA
             // Expecting 354
             if (!SendAndReadLine("DATA", SMTPResponse.ResponseCode.StartMailInput))
             {
-                Log.Add($"Error after DATA {Hostname}:{Port}");
+                Log.Add($"<Error after DATA {Hostname}:{Port}>");
                 return false;
             }
 
@@ -210,9 +222,9 @@ namespace NET_Email_Sender
             var emailSent = SendEndOfMessage();
 
             if (emailSent)
-                Log.Add("E-Mail sent");
+                Log.Add("<E-Mail sent>");
             else
-                Log.Add("E-Mail not sent");
+                Log.Add("<E-Mail not sent>");
 
             // Send QUIT
             // Expecting nothing
@@ -228,7 +240,7 @@ namespace NET_Email_Sender
         /// <returns></returns>
         private byte[] StringToBinary(string str)
         {
-            return Encoding.ASCII.GetBytes(str);
+            return Encoding.UTF8.GetBytes(str);
         }
         /// <summary>
         /// Convert Binary to String
@@ -239,7 +251,7 @@ namespace NET_Email_Sender
         /// <returns></returns>
         private string BinaryToString(byte[] bin, int start, int length)
         {
-            return Encoding.ASCII.GetString(bin, start, length);
+            return Encoding.UTF8.GetString(bin, start, length);
         }
 
         /// <summary>
@@ -290,7 +302,7 @@ namespace NET_Email_Sender
             try
             {
                 Reader.BaseStream.ReadTimeout = ReadTimeout;
-                var line = Reader.ReadLine();
+                var line = "[S]: " + SMTPResponse.FixMessage(Reader.ReadLine());
                 Log.Add(line);
 
                 return line;
@@ -329,7 +341,7 @@ namespace NET_Email_Sender
         /// <param name="data">Data to send</param>
         private void Send(string data)
         {
-            Log.Add(data);
+            Log.Add("[C]: " + data);
             Writer.WriteLine(data);
         }
 
