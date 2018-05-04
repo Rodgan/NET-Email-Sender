@@ -2,70 +2,91 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace NET_Email_Sender
 {
     public class Email
     {
+
+        // ([<]?[^ !"£\$%&/\(\)='\?\^<>]+@[^ !"£\$%&/\(\)='\?\^<>]+[\.]+[^ !"£\$%&/\(\)='\?\^<>]+[>]?)
+
+        public string Sender
+        {
+            get { return $"MAIL FROM: {ExtractEmailFromString(_From)}"; }
+        }
+        public string[] Recipients
+        {
+            get
+            {
+                var rcptToContainer = ($"{To};{Cc};{Bcc}").Split(';');
+
+                for ( var i = 0; i < rcptToContainer.Length; i++)
+                {
+                    var email = ExtractEmailFromString(rcptToContainer[i]);
+
+                    if (email != null)
+                        rcptToContainer[i] = $"RCPT TO: {email}";
+                }
+
+                return rcptToContainer;
+            }
+        }
+
+        public static string ExtractEmailFromString(string str)
+        {
+            var emailPattern = @"([<]?[^ ""!£\$%&/\(\)='\?\^<>]+@[^ ""!£\$%&/\(\)='\?\^<>]+[\.]+[^ ""!£\$%&/\(\)='\?\^<>]+[>]?)";
+
+            var match = Regex.Match(str, emailPattern);
+
+            if (match.Success)
+                return match.Value;
+            else
+                return null;
+        }
+
         private string _From;
-        /// <summary>
-        /// Sender
-        /// </summary>
         public string From
         {
-            get { return $"MAIL FROM: {_From}"; }
-            set { _From = value; }
+            get { return _From; }
+            set { _From = value; Headers.From = value; }
         }
 
         private string _To;
-        /// <summary>
-        /// Recipient
-        /// </summary>
         public string To
         {
-            get { return $"RCPT TO: {_To}"; }
-            set { _To = value; }
+            get { return _To; }
+            set { _To = value; Headers.To = value; }
         }
 
-        /// <summary>
-        /// Reply-To
-        /// </summary>
+        private string _Cc;
+        public string Cc
+        {
+            get { return _Cc; }
+            set { _Cc = value; Headers.Cc = value; }
+        }
+
+        private string _Bcc;
+        public string Bcc
+        {
+            get { return _Bcc; }
+            set { _Bcc = value; Headers.Bcc = value; }
+        }
+
+        private string _ReplyTo;
         public string ReplyTo
         {
-            get { return Headers.ReplyTo; }
-            set { Headers.ReplyTo = value; }
-        }
-        /// <summary>
-        /// CC
-        /// </summary>
-        public string CC
-        {
-            get { return Headers.CC; }
-            set { Headers.CC = value; }
+            get { return _ReplyTo; }
+            set { _ReplyTo = value; Headers.ReplyTo = value; }
         }
 
-        /// <summary>
-        /// BCC
-        /// </summary>
-        public string BCC
-        {
-            get { return Headers.BCC; }
-            set { Headers.BCC = value; }
-        }
-
-        /// <summary>
-        /// Subject
-        /// </summary>
+        private string _Subject;
         public string Subject
         {
-            get { return Headers.Subject; }
-            set { Headers.Subject = value; }
+            get { return _Subject; }
+            set { _Subject = value; Headers.Subject = value; }
         }
-
-        /// <summary>
-        /// Message
-        /// </summary>
         public string Message { get; set; }
 
         public Headers Headers { get; set; } = new Headers();
@@ -110,18 +131,18 @@ namespace NET_Email_Sender
             set { _ReplyTo = value; }
         }
 
-        private string _CC;
-        public string CC
+        private string _Cc;
+        public string Cc
         {
-            get { return (_CC != null) ? $"CC: {_CC}" : null; }
-            set { _CC = value; }
+            get { return (_Cc != null) ? $"CC: {_Cc}" : null; }
+            set { _Cc = value; }
         }
 
-        private string _BCC;
-        public string BCC
+        private string _Bcc;
+        public string Bcc
         {
-            get { return (_BCC != null) ? $"BCC: {_BCC}" : null; }
-            set { _BCC = value; }
+            get { return (_Bcc != null) ? $"BCC: {_Bcc}" : null; }
+            set { _Bcc = value; }
         }
 
         private string _MimeVersion;

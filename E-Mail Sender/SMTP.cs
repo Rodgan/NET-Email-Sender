@@ -58,6 +58,8 @@ namespace NET_Email_Sender
 
         public bool DoLogin { get; set; } = true;
         public bool UseSSL { get; set; } = false;
+        public bool SSLCertificateIsSecure { get; set; } = false;
+        private SslPolicyErrors SSLError { get; set; } = SslPolicyErrors.None;
 
         public AuthType Authentication = AuthType.Login;
 
@@ -121,7 +123,8 @@ namespace NET_Email_Sender
         /// <returns></returns>
         private bool ValidateSSLCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors policyErrors)
         {
-            return policyErrors == SslPolicyErrors.None;
+            SSLError = policyErrors;
+            return policyErrors == SslPolicyErrors.None || SSLCertificateIsSecure;
         }
 
         /// <summary>
@@ -142,7 +145,17 @@ namespace NET_Email_Sender
                 Log.Add($"<Connecting via SSL to {Hostname}:{Port}>");
 
                 SSLStream = new SslStream(Stream, true, new RemoteCertificateValidationCallback(ValidateSSLCertificate), null);
-                SSLStream.AuthenticateAsClient(Hostname);
+
+                try
+                {
+                    SSLStream.AuthenticateAsClient(Hostname);
+                }
+                catch(Exception excp)
+                {
+                    
+                    Log.Add($"<Invalid SSL Certificate {Hostname}:{Port} ({Enum.GetName(typeof(SslPolicyErrors), SSLError)})>");
+                    return false;
+                }
 
                 Reader = new StreamReader(SSLStream);
                 Writer = new StreamWriter(SSLStream) { AutoFlush = true };
@@ -369,12 +382,25 @@ namespace NET_Email_Sender
         {
             // Send MAIL FROM: ...
             // Expecting 250
-            if (!SendAndReadLine(email.From, SMTPResponse.ResponseCode.OK))
+            if (!SendAndReadLine(email.Sender, SMTPResponse.ResponseCode.OK))
                 return false;
+
+            bool allRecipientsAccepted = false;
 
             // Send RCPT TO:
             // Expecting 250
-            return SendAndReadLine(email.To, SMTPResponse.ResponseCode.OK);
+            foreach (var rcpt in email.Recipients)
+            {
+                if (string.IsNullOrEmpty(rcpt))
+                    continue;
+
+                if (!SendAndReadLine(rcpt, SMTPResponse.ResponseCode.OK))
+                    return false;
+                else
+                    allRecipientsAccepted = true;
+            }
+            
+            return allRecipientsAccepted;
         }
 
         private bool SendEndOfMessage()
