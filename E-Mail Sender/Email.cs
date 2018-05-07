@@ -11,12 +11,21 @@ namespace NET_Email_Sender
     {
 
         // ([<]?[^ !"£\$%&/\(\)='\?\^<>]+@[^ !"£\$%&/\(\)='\?\^<>]+[\.]+[^ !"£\$%&/\(\)='\?\^<>]+[>]?)
+        public Email(string from, string to, string subject, string message, bool useHTML = false)
+        {
+            From = from;
+            To = to;
+            Subject = subject;
+            Message = message;
+            UseHTML = useHTML;
+        }
+        public Email() { }
 
-        public string Sender
+        public string EmailSender
         {
             get { return $"MAIL FROM: {ExtractEmailFromString(_From)}"; }
         }
-        public string[] Recipients
+        public string[] EmailRecipients
         {
             get
             {
@@ -33,6 +42,124 @@ namespace NET_Email_Sender
                 return rcptToContainer;
             }
         }
+        public List<Attachment> EmailAttachments { get; set; } = new List<Attachment>();
+        public void AddAttachment(Attachment attachment)
+        {
+            if (!EmailAttachments.Contains(attachment))
+                EmailAttachments.Add(attachment);
+        }
+        public void RemoveAttachment(Attachment attachment)
+        {
+            if (EmailAttachments.Contains(attachment))
+                EmailAttachments.Remove(attachment);
+        }
+        
+        public string EmailBody
+        {
+            get
+            {
+                return string.Join(Environment.NewLine, EmailBodyBoundaryDeclaration, EmailBodyTextMessage, EmailBodyAttachments, EmailBodyEndingBoundary);
+            }
+        }
+
+        private string EmailBodyBoundaryDeclaration
+        {
+            get
+            {
+                var level_1_boundary = GenerateBoundary(1);
+                var boundaryDeclaration = new string[] {
+                     $"Content-Type: multipart/mixed; boundary=\"{level_1_boundary}\"",
+                     "",
+                     "This is a multipart message in MIME format.",
+                     ""
+                };
+
+                return string.Join(Environment.NewLine, boundaryDeclaration);
+            }
+        }
+
+        private string EmailBodyTextMessage
+        {
+            get
+            {
+                var level_1_boundary = GenerateBoundary(1);
+                var contentType = UseHTML ? "text/html" : "text/plain";
+
+                var textMessage = new string[] {
+                    $"--{level_1_boundary}",
+                    $"Content-Type: {contentType}",
+                    "",
+                    Message,
+                    ""
+                };
+
+                return string.Join(Environment.NewLine, textMessage);
+            }
+        }
+
+        private string EmailBodyAttachments
+        {
+            get
+            {
+                if (EmailAttachments.Count == 0)
+                    return null;
+
+                var stringCollection = new List<string>();
+                var level_1_boundary = GenerateBoundary(1);
+
+                for ( var i = 0; i < EmailAttachments.Count; i++)
+                {
+                    var currentAttachment = EmailAttachments[i];
+
+                    var attachmentString = new string[] {
+                        $"--{level_1_boundary}",
+                        $"Content-Type: {currentAttachment.MimeType};",
+                        $"Content-Disposition: attachment; filename=\"{currentAttachment.FileName}\"",
+                        $"Content-Transfer-Encoding: base64",
+                        "",
+                        currentAttachment.Base64,
+                        ""
+                    };
+
+                    stringCollection.Add(string.Join(Environment.NewLine, attachmentString));
+                }
+
+                return string.Join(Environment.NewLine, stringCollection);
+            }
+        }
+
+        private string EmailBodyEndingBoundary
+        {
+            get
+            {
+                var level_1_boundary = GenerateBoundary(1);
+
+                var endingBoundary = new string[] {
+                    $"--{level_1_boundary}",
+                    ""
+                };
+
+                return string.Join(Environment.NewLine, endingBoundary);
+            }
+        }
+
+        private List<string> Boundaries = new List<string>();
+
+        /// <summary>
+        /// Generate and/or get boundary string
+        /// </summary>
+        /// <param name="boundaryLevel">Level of boundary. Starts from 1</param>
+        /// <returns></returns>
+        private string GenerateBoundary(int boundaryLevel)
+        {
+            if (Boundaries.Count < boundaryLevel)
+            {
+                var newBoundary = $"--_Boundary_lv_{boundaryLevel}={Converter.StringToBase64(DateTime.Now.ToString())}";
+                Boundaries.Add(newBoundary);
+            }
+
+            return Boundaries[boundaryLevel - 1];
+        }
 
         public static string ExtractEmailFromString(string str)
         {
@@ -41,7 +168,16 @@ namespace NET_Email_Sender
             var match = Regex.Match(str, emailPattern);
 
             if (match.Success)
-                return match.Value;
+            {
+                var email = match.Value;
+
+                if (email.StartsWith("<") && !email.EndsWith(">"))
+                    email = email + ">";
+                else if (!email.StartsWith("<") && email.EndsWith(">"))
+                    email = "<" + email;
+
+                return email;
+            }
             else
                 return null;
         }
@@ -87,6 +223,8 @@ namespace NET_Email_Sender
             get { return _Subject; }
             set { _Subject = value; Headers.Subject = value; }
         }
+
+        public bool UseHTML { get; set; }
         public string Message { get; set; }
 
         public Headers Headers { get; set; } = new Headers();
@@ -145,25 +283,11 @@ namespace NET_Email_Sender
             set { _Bcc = value; }
         }
 
-        private string _MimeVersion;
+        private string _MimeVersion = "1.0";
         public string MimeVersion
         {
             get { return (_MimeVersion != null) ? $"MIME-Version: {_MimeVersion}" : null; }
             set { _MimeVersion = value; }
-        }
-
-        private string _ContentTransferEncoding;
-        public string ContentTransferEncoding
-        {
-            get { return (_ContentTransferEncoding != null) ? $"Content-Transfer-Encoding: {_ContentTransferEncoding}" : null; }
-            set { _ContentTransferEncoding = value; }
-        }
-
-        private string _ContentType;
-        public string ContentType
-        {
-            get { return (_ContentType != null) ? $"Content-Type: {_ContentType}" : null; }
-            set { _ContentType = value; }
         }
 
     }

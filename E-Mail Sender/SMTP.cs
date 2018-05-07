@@ -70,14 +70,14 @@ namespace NET_Email_Sender
         {
             get
             {
-                return StringToBase64(Username);
+                return Converter.StringToBase64(Username);
             }
         }
         private string PasswordBase64
         {
             get
             {
-                return StringToBase64(Password);
+                return Converter.StringToBase64(Password);
             }
         }
 
@@ -228,7 +228,7 @@ namespace NET_Email_Sender
 
             // Send Email body
             // Expecting nothing
-            Send(email.Message);
+            Send(email.EmailBody);
 
             // Send the end of message
             // Expecting 250
@@ -246,47 +246,7 @@ namespace NET_Email_Sender
             return emailSent;
         }
 
-        /// <summary>
-        /// Convert String to Binary
-        /// </summary>
-        /// <param name="str">String to convert</param>
-        /// <returns></returns>
-        private byte[] StringToBinary(string str)
-        {
-            return Encoding.UTF8.GetBytes(str);
-        }
-        /// <summary>
-        /// Convert Binary to String
-        /// </summary>
-        /// <param name="bin">Binary to convert</param>
-        /// <param name="start">Starting byte</param>
-        /// <param name="length">Count of bytes to convert</param>
-        /// <returns></returns>
-        private string BinaryToString(byte[] bin, int start, int length)
-        {
-            return Encoding.UTF8.GetString(bin, start, length);
-        }
-
-        /// <summary>
-        /// Convert String to Base64 string
-        /// </summary>
-        /// <param name="str">String to convert</param>
-        /// <returns></returns>
-        private string StringToBase64(string str)
-        {
-            return Convert.ToBase64String(StringToBinary(str));
-
-        }
-        /// <summary>
-        /// Convert Base64 string to String
-        /// </summary>
-        /// <param name="base64">Base64 string to convert</param>
-        /// <returns></returns>
-        private string Base64ToString(string base64)
-        {
-            var b64Bytes = Convert.FromBase64String(base64);
-            return BinaryToString(b64Bytes, 0, b64Bytes.Length);
-        }
+  
 
 
         /// <summary>
@@ -382,14 +342,14 @@ namespace NET_Email_Sender
         {
             // Send MAIL FROM: ...
             // Expecting 250
-            if (!SendAndReadLine(email.Sender, SMTPResponse.ResponseCode.OK))
+            if (!SendAndReadLine(email.EmailSender, SMTPResponse.ResponseCode.OK))
                 return false;
 
             bool allRecipientsAccepted = false;
 
             // Send RCPT TO:
             // Expecting 250
-            foreach (var rcpt in email.Recipients)
+            foreach (var rcpt in email.EmailRecipients)
             {
                 if (string.IsNullOrEmpty(rcpt))
                     continue;
