@@ -10,7 +10,6 @@ namespace NET_Email_Sender
     public class Email
     {
 
-        // ([<]?[^ !"£\$%&/\(\)='\?\^<>]+@[^ !"£\$%&/\(\)='\?\^<>]+[\.]+[^ !"£\$%&/\(\)='\?\^<>]+[>]?)
         public Email(string from, string to, string subject, string message, bool useHTML = false)
         {
             From = from;
@@ -31,7 +30,7 @@ namespace NET_Email_Sender
             {
                 var rcptToContainer = ($"{To};{Cc};{Bcc}").Split(';');
 
-                for ( var i = 0; i < rcptToContainer.Length; i++)
+                for (var i = 0; i < rcptToContainer.Length; i++)
                 {
                     var email = ExtractEmailFromString(rcptToContainer[i]);
 
@@ -43,17 +42,31 @@ namespace NET_Email_Sender
             }
         }
         public List<Attachment> EmailAttachments { get; set; } = new List<Attachment>();
+        public void AddAttachment(ICollection<Attachment> attachments)
+        {
+            var attachmentsToAdd = attachments.Where(x => !EmailAttachments.Contains(x)).ToList();
+            EmailAttachments.AddRange(attachmentsToAdd);
+        }
         public void AddAttachment(Attachment attachment)
         {
             if (!EmailAttachments.Contains(attachment))
                 EmailAttachments.Add(attachment);
+        }
+        public void RemoveAttachemnt(ICollection<Attachment> attachments)
+        {
+            var attachmentsToRemove = attachments.Where(x => EmailAttachments.Contains(x)).ToList();
+
+            foreach (var attachment in attachmentsToRemove)
+            {
+                EmailAttachments.Remove(attachment);
+            }
         }
         public void RemoveAttachment(Attachment attachment)
         {
             if (EmailAttachments.Contains(attachment))
                 EmailAttachments.Remove(attachment);
         }
-        
+
         public string EmailBody
         {
             get
@@ -77,7 +90,6 @@ namespace NET_Email_Sender
                 return string.Join(Environment.NewLine, boundaryDeclaration);
             }
         }
-
         private string EmailBodyTextMessage
         {
             get
@@ -96,7 +108,6 @@ namespace NET_Email_Sender
                 return string.Join(Environment.NewLine, textMessage);
             }
         }
-
         private string EmailBodyAttachments
         {
             get
@@ -107,7 +118,7 @@ namespace NET_Email_Sender
                 var stringCollection = new List<string>();
                 var level_1_boundary = GenerateBoundary(1);
 
-                for ( var i = 0; i < EmailAttachments.Count; i++)
+                for (var i = 0; i < EmailAttachments.Count; i++)
                 {
                     var currentAttachment = EmailAttachments[i];
 
@@ -127,15 +138,14 @@ namespace NET_Email_Sender
                 return string.Join(Environment.NewLine, stringCollection);
             }
         }
-
         private string EmailBodyEndingBoundary
         {
             get
             {
                 var level_1_boundary = GenerateBoundary(1);
-
+                // Ending boundary ends with "--"
                 var endingBoundary = new string[] {
-                    $"--{level_1_boundary}",
+                    $"--{level_1_boundary}--",
                     ""
                 };
 

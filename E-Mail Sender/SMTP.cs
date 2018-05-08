@@ -20,14 +20,18 @@ namespace NET_Email_Sender
             CramMD5
         }
 
-
+        #region Stream
         private NetworkStream Stream;
         private SslStream SSLStream;
         private Socket Client;
         private StreamReader Reader;
         private StreamWriter Writer;
+        #endregion
 
         private IPAddress _IPAddress;
+        /// <summary>
+        /// SMTP IP Address
+        /// </summary>
         public IPAddress IPAddress
         {
             get
@@ -37,6 +41,9 @@ namespace NET_Email_Sender
         }
 
         private string _Hostname;
+        /// <summary>
+        /// SMTP Hostname
+        /// </summary>
         public string Hostname
         {
             get
@@ -46,6 +53,9 @@ namespace NET_Email_Sender
         }
 
         private int _Port;
+        /// <summary>
+        /// SMTP Port
+        /// </summary>
         public int Port
         {
             get
@@ -54,18 +64,42 @@ namespace NET_Email_Sender
             }
         }
 
+        /// <summary>
+        /// Time (ms) to wait before stopping reading from Stream
+        /// </summary>
         public int ReadTimeout { get; set; } = 2000;
 
+        /// <summary>
+        /// If FALSE, login will be skipped
+        /// </summary>
         public bool DoLogin { get; set; } = true;
+        /// <summary>
+        /// If TRUE, use SSL Connection 
+        /// </summary>
         public bool UseSSL { get; set; } = false;
+        /// <summary>
+        /// If TRUE, SSL Certificate will always be marked as secure even if not
+        /// </summary>
         public bool SSLCertificateIsSecure { get; set; } = false;
         private SslPolicyErrors SSLError { get; set; } = SslPolicyErrors.None;
 
+        /// <summary>
+        /// Set the Type of Authentication
+        /// </summary>
         public AuthType Authentication = AuthType.Login;
 
+        /// <summary>
+        /// Get or Set Username
+        /// </summary>
         public string Username { get; set; } = "";
+        /// <summary>
+        /// Get or Set Password
+        /// </summary>
         public string Password { get; set; } = "";
 
+        /// <summary>
+        /// Get Username in Base64
+        /// </summary>
         private string UsernameBase64
         {
             get
@@ -73,6 +107,9 @@ namespace NET_Email_Sender
                 return Converter.StringToBase64(Username);
             }
         }
+        /// <summary>
+        /// Get Password in Base64
+        /// </summary>
         private string PasswordBase64
         {
             get
@@ -81,6 +118,9 @@ namespace NET_Email_Sender
             }
         }
 
+        /// <summary>
+        /// Get Logs
+        /// </summary>
         public List<string> Log = new List<string>();
 
         /// <summary>
@@ -100,18 +140,76 @@ namespace NET_Email_Sender
             _Port = port;
         }
 
+        /// <summary>
+        /// Create a new instance of SMTP
+        /// </summary>
+        /// <param name="ipAddress">IP Address or Hostname</param>
+        /// <param name="port">Port</param>
         public SMTP(string ipAddress, int port)
+        {
+            ConfigureSMTP(ipAddress, port);
+        }
+        /// <summary>
+        /// Create a new instance of SMTP
+        /// </summary>
+        /// <param name="ipAddress">IP Address or Hostname</param>
+        /// <param name="port">Port</param>
+        public SMTP(string ipAddress, string port)
+        {
+            ConfigureSMTP(ipAddress, port);
+        }
+        /// <summary>
+        /// Create a new instance of SMTP
+        /// </summary>
+        /// <param name="ipAddress">IP Address or Hostname</param>
+        /// <param name="port">Port</param>
+        /// <param name="username">SMTP Username</param>
+        /// <param name="password">SMTP Password</param>
+        /// <param name="useSSL">If TRUE, use SSL Connection</param>
+        /// <param name="sslCertificateIsAlwaysSecure">If TRUE, SSL Certificate will always be marked as secure even if not</param>
+        public SMTP(string ipAddress, int port, string username, string password, bool useSSL = false, bool sslCertificateIsAlwaysSecure = false)
+        {
+            ConfigureSMTP(ipAddress, port);
+            ConfigureLogin(username, password, useSSL, sslCertificateIsAlwaysSecure);
+        }
+        /// <summary>
+        /// Create a new instance of SMTP
+        /// </summary>
+        /// <param name="ipAddress">IP Address or Hostname</param>
+        /// <param name="port">Port</param>
+        /// <param name="username">SMTP Username</param>
+        /// <param name="password">SMTP Password</param>
+        /// <param name="useSSL">If TRUE, use SSL Connection</param>
+        /// <param name="sslCertificateIsAlwaysSecure">If TRUE, SSL Certificate will always be marked as secure even if not</param>
+        public SMTP(string ipAddress, string port, string username, string password, bool useSSL = false, bool sslCertificateIsAlwaysSecure = false)
+        {
+            ConfigureSMTP(ipAddress, port);
+            ConfigureLogin(username, password, useSSL, sslCertificateIsAlwaysSecure);
+        }
+        /// <summary>
+        /// Create a new instance of SMTP
+        /// </summary>
+        public SMTP() { }
+
+        private void ConfigureSMTP(string ipAddress, int port)
         {
             SetServerSettings(ipAddress, port);
         }
-        public SMTP(string ipAddress, string port)
+        private void ConfigureSMTP(string ipAddress, string port)
         {
             int smtpPort = 0;
 
             if (int.TryParse(port, out smtpPort))
                 SetServerSettings(ipAddress, smtpPort);
         }
-        public SMTP() { }
+        private void ConfigureLogin(string username, string password, bool useSSL, bool sslCertificateIsAlwaysSecure)
+        {
+            Username = username;
+            Password = password;
+            UseSSL = useSSL;
+            SSLCertificateIsSecure = sslCertificateIsAlwaysSecure;
+            DoLogin = true;
+        }
 
         /// <summary>
         /// Validate SSL Certificate
@@ -247,8 +345,6 @@ namespace NET_Email_Sender
         }
 
   
-
-
         /// <summary>
         /// Read to end
         /// </summary>
@@ -287,7 +383,7 @@ namespace NET_Email_Sender
         }
 
         /// <summary>
-        /// Send Data and read next line
+        /// Send Data and read next line. Returns TRUE if expected code is equals to the actual response code.
         /// </summary>
         /// <param name="data">Data to send</param>
         /// <param name="expectedResponse">Expected Response Code</param>
@@ -298,7 +394,7 @@ namespace NET_Email_Sender
             return SMTPResponse.GetResponseCode(ReadLine(), expectedResponse);
         }
         /// <summary>
-        /// Send Data and read to end
+        /// Send Data and read to end. Returns TRUE if expected code is equals to the actual response code.
         /// </summary>
         /// <param name="data">Data to send</param>
         /// <param name="expectedResponse">Expected Response Code</param>
@@ -309,7 +405,7 @@ namespace NET_Email_Sender
             return SMTPResponse.GetResponseCode(Read(), expectedResponse);
         }
         /// <summary>
-        /// Send Data without reading
+        /// Send Data without reading. Returns nothing.
         /// </summary>
         /// <param name="data">Data to send</param>
         private void Send(string data)
@@ -317,7 +413,6 @@ namespace NET_Email_Sender
             Log.Add("[C]: " + data);
             Writer.WriteLine(data);
         }
-
 
         private bool AuthLogin()
         {
