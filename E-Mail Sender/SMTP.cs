@@ -122,7 +122,23 @@ namespace NET_Email_Sender
         /// Get Logs
         /// </summary>
         public List<string> Log = new List<string>();
-
+        /// <summary>
+        /// Save Log File. Returns TRUE if file will be saved successfully
+        /// </summary>
+        /// <param name="savePath">File Path</param>
+        /// <returns></returns>
+        public bool SaveLogFile(string savePath)
+        {
+            try
+            {
+                File.WriteAllLines(savePath, Log);
+                return true;
+            }
+            catch(Exception excp)
+            {
+                return false;
+            }
+        }
         /// <summary>
         /// Set Server Settings
         /// </summary>

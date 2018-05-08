@@ -77,10 +77,6 @@ namespace NET_Email_Sender
 
             return attachment;
         }
-        public Attachment AddAttachment(string filePath)
-        {
-            return AddAttachment(new Attachment(filePath));
-        }
         public Attachment[] AddAttachment(params string[] filePathCollection)
         {
             var attachmentList = new List<Attachment>();
