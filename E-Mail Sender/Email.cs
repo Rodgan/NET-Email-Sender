@@ -16,8 +16,24 @@ namespace NET_Email_Sender
         }
         public Email(string from, string to, string subject, string message, EmailContentType contentType = EmailContentType.Text)
         {
+            NewEmail(from, to, null, null, null, subject, message, contentType);
+        }
+        public Email(string from, string to, string replyTo, string subject, string message, EmailContentType contentType = EmailContentType.Text)
+        {
+            NewEmail(from, to, null, null, replyTo, subject, message, contentType);
+        }
+        public Email(string from, string to, string cc, string bcc, string replyTo, string subject, string message, EmailContentType contentType = EmailContentType.Text)
+        {
+            NewEmail(from, to, cc, bcc, replyTo, subject, message, contentType);
+        }
+
+        private void NewEmail(string from, string to, string cc, string bcc, string replyTo, string subject, string message, EmailContentType contentType)
+        {
             From = from;
             To = to;
+            Cc = cc;
+            Bcc = bcc;
+            ReplyTo = replyTo;
             Subject = subject;
             Message = message;
             UseHTML = (contentType == EmailContentType.HTML);
