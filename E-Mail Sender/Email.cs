@@ -63,15 +63,34 @@ namespace NET_Email_Sender
             }
         }
         public List<Attachment> EmailAttachments { get; set; } = new List<Attachment>();
-        public void AddAttachment(ICollection<Attachment> attachments)
+        public Attachment[] AddAttachment(ICollection<Attachment> attachments)
         {
             var attachmentsToAdd = attachments.Where(x => !EmailAttachments.Contains(x)).ToList();
             EmailAttachments.AddRange(attachmentsToAdd);
+
+            return attachmentsToAdd.ToArray();
         }
-        public void AddAttachment(Attachment attachment)
+        public Attachment AddAttachment(Attachment attachment)
         {
             if (!EmailAttachments.Contains(attachment))
                 EmailAttachments.Add(attachment);
+
+            return attachment;
+        }
+        public Attachment AddAttachment(string filePath)
+        {
+            return AddAttachment(new Attachment(filePath));
+        }
+        public Attachment[] AddAttachment(params string[] filePathCollection)
+        {
+            var attachmentList = new List<Attachment>();
+
+            foreach (var filePath in filePathCollection)
+            {
+                attachmentList.Add(new Attachment(filePath));
+            }
+
+            return AddAttachment(attachmentList);
         }
         public void RemoveAttachemnt(ICollection<Attachment> attachments)
         {
