@@ -9,15 +9,20 @@ namespace NET_Email_Sender
 {
     public class Email
     {
-
-        public Email(string from, string to, string subject, string message, bool useHTML = false)
+        public enum EmailContentType
+        {
+            Text,
+            HTML
+        }
+        public Email(string from, string to, string subject, string message, EmailContentType contentType = EmailContentType.Text)
         {
             From = from;
             To = to;
             Subject = subject;
             Message = message;
-            UseHTML = useHTML;
+            UseHTML = (contentType == EmailContentType.HTML);
         }
+
         public Email() { }
 
         public string EmailSender
