@@ -71,7 +71,7 @@ namespace NET_Email_Sender
             if (EmailAttachments.Contains(attachment))
                 EmailAttachments.Remove(attachment);
         }
-
+        
         public string EmailBody
         {
             get

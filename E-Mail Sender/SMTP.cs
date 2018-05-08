@@ -72,7 +72,7 @@ namespace NET_Email_Sender
         /// <summary>
         /// If FALSE, login will be skipped
         /// </summary>
-        public bool DoLogin { get; set; } = true;
+        public bool DoLogin { get; set; } = false;
         /// <summary>
         /// If TRUE, use SSL Connection 
         /// </summary>
@@ -128,7 +128,7 @@ namespace NET_Email_Sender
         /// </summary>
         /// <param name="ipAddressOrHostname">IP Address or Hostname</param>
         /// <param name="port">Port</param>
-        public void SetServerSettings(string ipAddressOrHostname, int port)
+        public void SetServerSettings(string ipAddressOrHostname, int port, bool useSSL = false, bool sslCertificateIsAlwaysSecure = false)
         {
             IPHostEntry DNS = Dns.GetHostEntry(ipAddressOrHostname);
 
@@ -138,6 +138,8 @@ namespace NET_Email_Sender
             _IPAddress = DNS.AddressList[0];
             _Hostname = DNS.HostName;
             _Port = port;
+            UseSSL = useSSL;
+            SSLCertificateIsSecure = sslCertificateIsAlwaysSecure;
         }
 
         /// <summary>
@@ -145,18 +147,18 @@ namespace NET_Email_Sender
         /// </summary>
         /// <param name="ipAddress">IP Address or Hostname</param>
         /// <param name="port">Port</param>
-        public SMTP(string ipAddress, int port)
+        public SMTP(string ipAddress, int port, bool useSSL = false, bool sslCertificateIsAlwaysSecure = false)
         {
-            ConfigureSMTP(ipAddress, port);
+            ConfigureSMTP(ipAddress, port, useSSL, sslCertificateIsAlwaysSecure);
         }
         /// <summary>
         /// Create a new instance of SMTP
         /// </summary>
         /// <param name="ipAddress">IP Address or Hostname</param>
         /// <param name="port">Port</param>
-        public SMTP(string ipAddress, string port)
+        public SMTP(string ipAddress, string port, bool useSSL = false, bool sslCertificateIsAlwaysSecure = false)
         {
-            ConfigureSMTP(ipAddress, port);
+            ConfigureSMTP(ipAddress, port, useSSL, sslCertificateIsAlwaysSecure);
         }
         /// <summary>
         /// Create a new instance of SMTP
@@ -170,8 +172,8 @@ namespace NET_Email_Sender
         /// <param name="sslCertificateIsAlwaysSecure">If TRUE, SSL Certificate will always be marked as secure even if not</param>
         public SMTP(string ipAddress, int port, string username, string password, AuthType authType = AuthType.Login, bool useSSL = false, bool sslCertificateIsAlwaysSecure = false)
         {
-            ConfigureSMTP(ipAddress, port);
-            ConfigureLogin(username, password, authType, useSSL, sslCertificateIsAlwaysSecure);
+            ConfigureSMTP(ipAddress, port, useSSL, sslCertificateIsAlwaysSecure);
+            ConfigureLogin(username, password, authType);
         }
         /// <summary>
         /// Create a new instance of SMTP
@@ -185,32 +187,30 @@ namespace NET_Email_Sender
         /// <param name="sslCertificateIsAlwaysSecure">If TRUE, SSL Certificate will always be marked as secure even if not</param>
         public SMTP(string ipAddress, string port, string username, string password, AuthType authType = AuthType.Login, bool useSSL = false, bool sslCertificateIsAlwaysSecure = false)
         {
-            ConfigureSMTP(ipAddress, port);
-            ConfigureLogin(username, password, authType, useSSL, sslCertificateIsAlwaysSecure);
+            ConfigureSMTP(ipAddress, port, useSSL, sslCertificateIsAlwaysSecure);
+            ConfigureLogin(username, password, authType);
         }
         /// <summary>
         /// Create a new instance of SMTP
         /// </summary>
         public SMTP() { }
 
-        private void ConfigureSMTP(string ipAddress, int port)
+        private void ConfigureSMTP(string ipAddress, int port, bool useSSL = false, bool sslCertificateIsAlwaysSecure = false)
         {
-            SetServerSettings(ipAddress, port);
+            SetServerSettings(ipAddress, port, useSSL, sslCertificateIsAlwaysSecure);
         }
-        private void ConfigureSMTP(string ipAddress, string port)
+        private void ConfigureSMTP(string ipAddress, string port, bool useSSL = false, bool sslCertificateIsAlwaysSecure = false)
         {
             int smtpPort = 0;
 
             if (int.TryParse(port, out smtpPort))
-                SetServerSettings(ipAddress, smtpPort);
+                SetServerSettings(ipAddress, smtpPort, useSSL, sslCertificateIsAlwaysSecure);
         }
-        private void ConfigureLogin(string username, string password, AuthType authType, bool useSSL, bool sslCertificateIsAlwaysSecure)
+        private void ConfigureLogin(string username, string password, AuthType authType)
         {
             Username = username;
             Password = password;
             Authentication = authType;
-            UseSSL = useSSL;
-            SSLCertificateIsSecure = sslCertificateIsAlwaysSecure;
             DoLogin = true;
         }
 
