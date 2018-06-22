@@ -9,6 +9,7 @@ namespace NET_Email_Sender
 {
     public class Attachment
     {
+        public Attachment() { }
         public Attachment(string filePath)
         {
             _FilePath = filePath;
@@ -17,6 +18,7 @@ namespace NET_Email_Sender
         public string FilePath
         {
             get { return _FilePath; }
+            set { _FilePath = value; }
         }
 
         public bool FileExists
