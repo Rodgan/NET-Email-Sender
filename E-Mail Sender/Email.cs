@@ -16,26 +16,26 @@ namespace NET_Email_Sender
         }
         public Email(string from, string to, string subject, string message, EmailContentType contentType = EmailContentType.Text)
         {
-            NewEmail(from, to, null, null, null, null, null, subject, message, contentType);
+            NewEmail(from, to, null, null, null, false, false, subject, message, contentType);
         }
-        public Email(string from, string to, string replyTo, string deliveryNotification, string readingNotification, string subject, string message, EmailContentType contentType = EmailContentType.Text)
+        public Email(string from, string to, string replyTo, bool deliveryNotification, bool readingNotification, string subject, string message, EmailContentType contentType = EmailContentType.Text)
         {
             NewEmail(from, to, null, null, replyTo, deliveryNotification, readingNotification, subject, message, contentType);
         }
-        public Email(string from, string to, string cc, string bcc, string replyTo, string deliveryNotification, string readingNotification, string subject, string message, EmailContentType contentType = EmailContentType.Text)
+        public Email(string from, string to, string cc, string bcc, string replyTo, bool deliveryNotification, bool readingNotification, string subject, string message, EmailContentType contentType = EmailContentType.Text)
         {
             NewEmail(from, to, cc, bcc, replyTo, deliveryNotification, readingNotification, subject, message, contentType);
         }
 
-        private void NewEmail(string from, string to, string cc, string bcc, string replyTo, string deliveryNotification, string readingNotification, string subject, string message, EmailContentType contentType)
+        private void NewEmail(string from, string to, string cc, string bcc, string replyTo, bool deliveryNotification, bool readingNotification, string subject, string message, EmailContentType contentType)
         {
             From = from;
             To = to;
             Cc = cc;
             Bcc = bcc;
             ReplyTo = replyTo;
-            DeliveryNotification = deliveryNotification;
-            ReadingNotification = readingNotification;
+            EnableDeliveryNotification = deliveryNotification;
+            EnableReadingNotification = readingNotification;
             Subject = subject;
             Message = message;
             UseHTML = (contentType == EmailContentType.HTML);
@@ -45,8 +45,15 @@ namespace NET_Email_Sender
 
         public string EmailSender
         {
-            get { return $"MAIL FROM: {ExtractEmailFromString(_From)}"; }
+            get
+            {
+                if (EnableDeliveryNotification)
+                    return $"MAIL FROM: {ExtractEmailFromString(_From)} RET=HDRS ENVID=unique_identifier";
+                else
+                    return $"MAIL FROM: {ExtractEmailFromString(_From)}";
+            }
         }
+
         public string[] EmailRecipients
         {
             get
@@ -58,7 +65,12 @@ namespace NET_Email_Sender
                     var email = ExtractEmailFromString(rcptToContainer[i]);
 
                     if (email != null)
-                        rcptToContainer[i] = $"RCPT TO: {email}";
+                    {
+                        if (EnableDeliveryNotification)
+                            rcptToContainer[i] = $"RCPT TO: {email} NOTIFY=SUCCESS,FAILURE ORCPT=rfc822;{email}";
+                        else
+                            rcptToContainer[i] = $"RCPT TO: {email}";
+                    }
                 }
 
                 return rcptToContainer;
@@ -272,19 +284,16 @@ namespace NET_Email_Sender
             set { _Subject = value; Headers.Subject = value; }
         }
 
-        private string _DeliveryNotification;
-        public string DeliveryNotification
+        public bool EnableReadingNotification
         {
-            get { return _DeliveryNotification; }
-            set { _DeliveryNotification = value; Headers.ReturnReceiptTo = value; }
+            get { return Headers.EnableReadingNotification; }
+            set { Headers.EnableReadingNotification = value; }
+        }
+        public bool EnableDeliveryNotification
+        {
+            get; set;
         }
 
-        private string _ReadingConfirmation;
-        public string ReadingNotification
-        {
-            get { return _ReadingConfirmation; }
-            set { _ReadingConfirmation = value; Headers.DispositionNotificationTo = value; }
-        }
         public bool UseHTML { get; set; }
         public string Message { get; set; }
 
@@ -300,6 +309,13 @@ namespace NET_Email_Sender
                     Where(x => x.GetValue(obj) != null).
                     Select(x => x.GetValue(obj).ToString()).
                     ToArray();
+        }
+
+        // Reading notification
+        public bool EnableReadingNotification;
+        public string DispositionNotificationTo
+        {
+            get { return (EnableReadingNotification) ? $"Disposition-Notification-To: {_From}" : null; }
         }
 
         private string _From;
@@ -351,20 +367,5 @@ namespace NET_Email_Sender
             set { _MimeVersion = value; }
         }
 
-        // Delivery notification
-        private string _ReturnReceiptTo;
-        public string ReturnReceiptTo
-        {
-            get { return (_ReturnReceiptTo != null) ? $"Return-Receipt-To: {_ReturnReceiptTo}" : null; }
-            set { _ReturnReceiptTo = value; }
-        }
-
-        // Reading notification
-        private string _DispositionNotificationTo;
-        public string DispositionNotificationTo
-        {
-            get { return (_DispositionNotificationTo != null) ? $"Disposition-Notification-To: {_DispositionNotificationTo}" : null; }
-            set { _DispositionNotificationTo = value; }
-        }
     }
 }
